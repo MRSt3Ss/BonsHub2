@@ -1,0 +1,81 @@
+-- Load library
+local DarkUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/MRSt3Ss/BonsHub2/refs/heads/main/mylib/main"))():Load()
+
+-- Create window
+local Window = DarkUI:MakeWindow({
+	Name = "Orion Library"
+})
+
+-- Create tabs
+local Lab1 = Window:MakeTab({
+	Name = "Lab 1",
+	Order = 1
+})
+
+local Tab2 = Window:MakeTab({
+	Name = "Tab 2",
+	Order = 2
+})
+
+local SettingsTab = Window:MakeTab({
+	Name = "Settings",
+	Order = 99
+})
+
+-- Add elements to SettingsTab
+SettingsTab:AddLabel({
+	Name = "Konfigurasi"
+})
+SettingsTab:AddKeybind({
+	Name = "Toggle UI Key",
+	Default = Window.Config.MainKeybind,
+	Callback = function(newKey)
+		Window.Config.MainKeybind = newKey
+		print("UI Keybind diubah menjadi:", newKey.Name)
+	end
+})
+
+-- Add elements to Lab1 tab
+Lab1:AddLabel({
+	Name = "Contoh Elemen"
+})
+Lab1:AddButton({
+	Name = "Button",
+	Callback = function()
+		print("Button clicked!")
+	end
+})
+Lab1:AddToggle({
+	Name = "Toggle",
+	Default = false,
+	Callback = function(Value)
+		print("Toggle:", Value)
+	end
+})
+Lab1:AddSlider({
+	Name = "Slider (Smooth)",
+	Min = 0,
+	Max = 100,
+	Default = 50,
+	Callback = function(Value)
+		-- print("Slider value:", Value)
+	end
+})
+Lab1:AddTextBox({
+	Name = "TextBox",
+	Placeholder = "Ketik sesuatu...",
+	Callback = function(Text)
+		print("TextBox Ganti:", Text)
+	end
+})
+Lab1:AddDropdown({
+	Name = "Dropdown",
+	Default = "Opsi 1",
+	Options = {"Opsi 1", "Opsi 2", "Pilihan Lain", "Ini Panjang"},
+	Callback = function(Option)
+		print("Dropdown dipilih:", Option)
+	end
+})
+
+-- Initialize
+Window:Init()
