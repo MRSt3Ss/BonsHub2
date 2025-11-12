@@ -1,0 +1,321 @@
+-- DarkUI Library by YourName
+local DarkUI = {}
+
+-- Colors
+local accentColor = Color3.fromRGB(0, 170, 255)
+local backgroundColor = Color3.fromRGB(25, 25, 25)
+local sidebarColor = Color3.fromRGB(30, 30, 30)
+local elementColor = Color3.fromRGB(40, 40, 40)
+local textColor = Color3.fromRGB(255, 255, 255)
+
+function DarkUI:Load()
+    local library = {}
+    local tabs = {}
+    local currentTab = nil
+    local elementsYOffset = 0
+    
+    -- Create main UI
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "DarkUILibrary"
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    ScreenGui.Parent = game:GetService("CoreGui")
+    
+    -- Main container
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Size = UDim2.new(0, 600, 0, 400)
+    MainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
+    MainFrame.BackgroundColor3 = backgroundColor
+    MainFrame.BorderSizePixel = 0
+    MainFrame.ClipsDescendants = true
+    MainFrame.Parent = ScreenGui
+    
+    -- Corner rounding
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 8)
+    UICorner.Parent = MainFrame
+    
+    -- Top bar
+    local TopBar = Instance.new("Frame")
+    TopBar.Size = UDim2.new(1, 0, 0, 40)
+    TopBar.BackgroundColor3 = sidebarColor
+    TopBar.BorderSizePixel = 0
+    TopBar.Parent = MainFrame
+    
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(0, 200, 1, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = "DarkUI Library"
+    Title.TextColor3 = accentColor
+    Title.TextSize = 18
+    Title.Font = Enum.Font.GothamBold
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Position = UDim2.new(0, 15, 0, 0)
+    Title.Parent = TopBar
+    
+    -- Sidebar for tabs
+    local SideBar = Instance.new("Frame")
+    SideBar.Size = UDim2.new(0, 150, 1, -40)
+    SideBar.Position = UDim2.new(0, 0, 0, 40)
+    SideBar.BackgroundColor3 = sidebarColor
+    SideBar.BorderSizePixel = 0
+    SideBar.Parent = MainFrame
+    
+    -- Content area
+    local ContentFrame = Instance.new("Frame")
+    ContentFrame.Size = UDim2.new(1, -150, 1, -40)
+    ContentFrame.Position = UDim2.new(0, 150, 0, 40)
+    ContentFrame.BackgroundColor3 = backgroundColor
+    ContentFrame.BorderSizePixel = 0
+    ContentFrame.Parent = MainFrame
+    
+    local ContentScrolling = Instance.new("ScrollingFrame")
+    ContentScrolling.Size = UDim2.new(1, -20, 1, -20)
+    ContentScrolling.Position = UDim2.new(0, 10, 0, 10)
+    ContentScrolling.BackgroundTransparency = 1
+    ContentScrolling.BorderSizePixel = 0
+    ContentScrolling.ScrollBarThickness = 4
+    ContentScrolling.ScrollBarImageColor3 = accentColor
+    ContentScrolling.CanvasSize = UDim2.new(0, 0, 0, 0)
+    ContentScrolling.Parent = ContentFrame
+    
+    local ContentLayout = Instance.new("UIListLayout")
+    ContentLayout.Padding = UDim.new(0, 10)
+    ContentLayout.Parent = ContentScrolling
+    
+    -- Tab buttons container
+    local TabButtonsFrame = Instance.new("Frame")
+    TabButtonsFrame.Size = UDim2.new(1, 0, 1, -50)
+    TabButtonsFrame.Position = UDim2.new(0, 0, 0, 0)
+    TabButtonsFrame.BackgroundTransparency = 1
+    TabButtonsFrame.Parent = SideBar
+    
+    local TabButtonsLayout = Instance.new("UIListLayout")
+    TabButtonsLayout.Padding = UDim.new(0, 5)
+    TabButtonsLayout.Parent = TabButtonsFrame
+    
+    -- Premium badge
+    local PremiumBadge = Instance.new("TextLabel")
+    PremiumBadge.Size = UDim2.new(1, -20, 0, 30)
+    PremiumBadge.Position = UDim2.new(0, 10, 1, -40)
+    PremiumBadge.BackgroundColor3 = Color3.fromRGB(255, 170, 0)
+    PremiumBadge.Text = "PREMIUM"
+    PremiumBadge.TextColor3 = Color3.fromRGB(255, 255, 255)
+    PremiumBadge.TextSize = 14
+    PremiumBadge.Font = Enum.Font.GothamBold
+    PremiumBadge.Parent = SideBar
+    
+    local PremiumCorner = Instance.new("UICorner")
+    PremiumCorner.CornerRadius = UDim.new(0, 6)
+    PremiumCorner.Parent = PremiumBadge
+    
+    function library:MakeWindow(config)
+        Title.Text = config.Name or "DarkUI Library"
+        return library
+    end
+    
+    function library:MakeTab(tabConfig)
+        local tab = {}
+        local tabElements = {}
+        local tabButton
+        
+        -- Create tab button
+        tabButton = Instance.new("TextButton")
+        tabButton.Size = UDim2.new(1, -20, 0, 35)
+        tabButton.Position = UDim2.new(0, 10, 0, #tabs * 40)
+        tabButton.BackgroundColor3 = elementColor
+        tabButton.Text = tabConfig.Name
+        tabButton.TextColor3 = textColor
+        tabButton.TextSize = 14
+        tabButton.Font = Enum.Font.Gotham
+        tabButton.Parent = TabButtonsFrame
+        
+        local tabCorner = Instance.new("UICorner")
+        tabCorner.CornerRadius = UDim.new(0, 6)
+        tabCorner.Parent = tabButton
+        
+        -- Tab content (initially hidden)
+        local tabContent = Instance.new("Frame")
+        tabContent.Size = UDim2.new(1, 0, 0, 0)
+        tabContent.BackgroundTransparency = 1
+        tabContent.Visible = false
+        tabContent.Parent = ContentScrolling
+        
+        local tabContentLayout = Instance.new("UIListLayout")
+        tabContentLayout.Padding = UDim.new(0, 10)
+        tabContentLayout.Parent = tabContent
+        
+        -- Select first tab by default
+        if #tabs == 0 then
+            tabButton.BackgroundColor3 = accentColor
+            tabContent.Visible = true
+            currentTab = tabContent
+        end
+        
+        tabButton.MouseButton1Click:Connect(function()
+            -- Hide all tab contents
+            for _, existingTab in pairs(tabs) do
+                existingTab.content.Visible = false
+                existingTab.button.BackgroundColor3 = elementColor
+            end
+            
+            -- Show this tab content
+            tabContent.Visible = true
+            tabButton.BackgroundColor3 = accentColor
+            currentTab = tabContent
+        end)
+        
+        function tab:AddButton(buttonConfig)
+            local buttonElement = Instance.new("TextButton")
+            buttonElement.Size = UDim2.new(1, 0, 0, 35)
+            buttonElement.BackgroundColor3 = elementColor
+            buttonElement.Text = buttonConfig.Name
+            buttonElement.TextColor3 = textColor
+            buttonElement.TextSize = 14
+            buttonElement.Font = Enum.Font.Gotham
+            buttonElement.Parent = tabContent
+            
+            local buttonCorner = Instance.new("UICorner")
+            buttonCorner.CornerRadius = UDim.new(0, 6)
+            buttonCorner.Parent = buttonElement
+            
+            buttonElement.MouseButton1Click:Connect(buttonConfig.Callback)
+            
+            -- Update canvas size
+            tabContent.Size = UDim2.new(1, 0, 0, tabContentLayout.AbsoluteContentSize.Y)
+            ContentScrolling.CanvasSize = UDim2.new(0, 0, 0, tabContentLayout.AbsoluteContentSize.Y + 20)
+            
+            return buttonElement
+        end
+        
+        function tab:AddToggle(toggleConfig)
+            local toggleFrame = Instance.new("Frame")
+            toggleFrame.Size = UDim2.new(1, 0, 0, 35)
+            toggleFrame.BackgroundTransparency = 1
+            toggleFrame.Parent = tabContent
+            
+            local toggleLabel = Instance.new("TextLabel")
+            toggleLabel.Size = UDim2.new(0.7, 0, 1, 0)
+            toggleLabel.BackgroundTransparency = 1
+            toggleLabel.Text = toggleConfig.Name
+            toggleLabel.TextColor3 = textColor
+            toggleLabel.TextSize = 14
+            toggleLabel.Font = Enum.Font.Gotham
+            toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+            toggleLabel.Parent = toggleFrame
+            
+            local toggleButton = Instance.new("TextButton")
+            toggleButton.Size = UDim2.new(0, 50, 0, 25)
+            toggleButton.Position = UDim2.new(1, -55, 0.5, -12.5)
+            toggleButton.BackgroundColor3 = elementColor
+            toggleButton.Text = ""
+            toggleButton.Parent = toggleFrame
+            
+            local toggleCorner = Instance.new("UICorner")
+            toggleCorner.CornerRadius = UDim.new(0, 12)
+            toggleCorner.Parent = toggleButton
+            
+            local toggleState = toggleConfig.Default or false
+            
+            local function updateToggle()
+                if toggleState then
+                    toggleButton.BackgroundColor3 = accentColor
+                else
+                    toggleButton.BackgroundColor3 = elementColor
+                end
+                toggleConfig.Callback(toggleState)
+            end
+            
+            toggleButton.MouseButton1Click:Connect(function()
+                toggleState = not toggleState
+                updateToggle()
+            end)
+            
+            updateToggle()
+            
+            -- Update canvas size
+            tabContent.Size = UDim2.new(1, 0, 0, tabContentLayout.AbsoluteContentSize.Y)
+            ContentScrolling.CanvasSize = UDim2.new(0, 0, 0, tabContentLayout.AbsoluteContentSize.Y + 20)
+            
+            return toggleFrame
+        end
+        
+        function tab:AddLabel(labelConfig)
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, 0, 0, 25)
+            label.BackgroundTransparency = 1
+            label.Text = labelConfig.Name
+            label.TextColor3 = textColor
+            label.TextSize = 16
+            label.Font = Enum.Font.GothamBold
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.Parent = tabContent
+            
+            -- Update canvas size
+            tabContent.Size = UDim2.new(1, 0, 0, tabContentLayout.AbsoluteContentSize.Y)
+            ContentScrolling.CanvasSize = UDim2.new(0, 0, 0, tabContentLayout.AbsoluteContentSize.Y + 20)
+            
+            return label
+        end
+        
+        function tab:AddParagraph(paragraphConfig)
+            local paragraphFrame = Instance.new("Frame")
+            paragraphFrame.Size = UDim2.new(1, 0, 0, 100)
+            paragraphFrame.BackgroundTransparency = 1
+            paragraphFrame.Parent = tabContent
+            
+            local title = Instance.new("TextLabel")
+            title.Size = UDim2.new(1, 0, 0, 20)
+            title.BackgroundTransparency = 1
+            title.Text = paragraphConfig.Name or "Paragraph"
+            title.TextColor3 = textColor
+            title.TextSize = 16
+            title.Font = Enum.Font.GothamBold
+            title.TextXAlignment = Enum.TextXAlignment.Left
+            title.Parent = paragraphFrame
+            
+            local content = Instance.new("TextLabel")
+            content.Size = UDim2.new(1, 0, 1, -25)
+            content.Position = UDim2.new(0, 0, 0, 25)
+            content.BackgroundTransparency = 1
+            content.Text = paragraphConfig.Content or ""
+            content.TextColor3 = Color3.fromRGB(200, 200, 200)
+            content.TextSize = 12
+            content.Font = Enum.Font.Gotham
+            content.TextXAlignment = Enum.TextXAlignment.Left
+            content.TextYAlignment = Enum.TextYAlignment.Top
+            content.TextWrapped = true
+            content.Parent = paragraphFrame
+            
+            -- Update canvas size
+            tabContent.Size = UDim2.new(1, 0, 0, tabContentLayout.AbsoluteContentSize.Y)
+            ContentScrolling.CanvasSize = UDim2.new(0, 0, 0, tabContentLayout.AbsoluteContentSize.Y + 20)
+            
+            return paragraphFrame
+        end
+        
+        -- Store tab data
+        table.insert(tabs, {
+            button = tabButton,
+            content = tabContent,
+            elements = tabElements
+        })
+        
+        -- Update tab buttons layout
+        TabButtonsFrame.Size = UDim2.new(1, 0, 0, (#tabs * 40) + 10)
+        
+        return tab
+    end
+    
+    function library:Init()
+        print("DarkUI Library Initialized!")
+        return library
+    end
+    
+    function library:Destroy()
+        ScreenGui:Destroy()
+    end
+    
+    return library
+end
+
+return DarkUI
