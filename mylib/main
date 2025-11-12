@@ -1,4 +1,5 @@
 -- DarkUI Library v4 (Animated by Gemini)
+-- [UPDATE] Ditambahkan fitur Search untuk Dropdown
 local DarkUI = {}
 
 -- [[ Layanan dan Variabel Lokal ]]
@@ -440,7 +441,10 @@ function DarkUI:Load()
 			
 			local toggleState = toggleConfig.Default or false
 			
-			local function updateToggle()
+			-- [PERBAIKAN] Tambahkan fungsi Set() untuk LoadConfig
+			local toggleObject = {}
+			
+			local function updateToggle(fireCallback)
 				if toggleState then
 					toggleButton.BackgroundColor3 = theme.Accent
 					toggleButton.BackgroundTransparency = 0
@@ -448,19 +452,25 @@ function DarkUI:Load()
 					toggleButton.BackgroundColor3 = theme.Element
 					toggleButton.BackgroundTransparency = theme.Transparency.Element
 				end
-				if toggleConfig.Callback then
+				if fireCallback and toggleConfig.Callback then
 					toggleConfig.Callback(toggleState)
 				end
 			end
 			
 			toggleButton.MouseButton1Click:Connect(function()
 				toggleState = not toggleState
-				updateToggle()
+				updateToggle(true)
 			end)
 			
-			updateToggle()
+			function toggleObject:Set(value)
+				toggleState = value
+				updateToggle(false) -- Update visual tanpa memicu callback
+			end
+			
+			updateToggle(false) -- Panggil saat inisialisasi
 			UpdateCanvasSize()
-			return toggleFrame
+			
+			return toggleObject -- Kembalikan objek, bukan frame
 		end
 		
 		function tab:AddLabel(labelConfig)
@@ -493,7 +503,7 @@ function DarkUI:Load()
 			title.TextSize = 16
 			title.Font = Enum.Font.GothamBold
 			title.TextXAlignment = Enum.TextXAlignment.Left
-			title.Parent = title
+			title.Parent = paragraphFrame -- [PERBAIKAN] Bug: sebelumnya .Parent = title
 			
 			local content = Instance.new("TextLabel")
 			content.Size = UDim2.new(1, 0, 0, 0)
@@ -574,6 +584,7 @@ function DarkUI:Load()
 			handleCorner.Parent = handle
 
 			local currentValue = default
+			local sliderObject = {}
 			
 			local function UpdateSlider(value, fireCallback)
 				currentValue = math.clamp(value, min, max)
@@ -586,6 +597,10 @@ function DarkUI:Load()
 				if fireCallback and callback then
 					callback(currentValue)
 				end
+			end
+			
+			function sliderObject:Set(value)
+				UpdateSlider(value, false)
 			end
 			
 			local dragging = false
@@ -627,7 +642,7 @@ function DarkUI:Load()
 			
 			UpdateSlider(default, false)
 			UpdateCanvasSize()
-			return sliderFrame
+			return sliderObject -- Kembalikan objek, bukan frame
 		end
 
 		function tab:AddTextBox(textboxConfig)
@@ -669,19 +684,26 @@ function DarkUI:Load()
 			textBox.ClearTextOnFocus = false
 			textBox.Parent = textboxBg
 			
+			local textboxObject = {}
+			
 			textBox.FocusLost:Connect(function(enterPressed)
 				if textboxConfig.Callback then
 					textboxConfig.Callback(textBox.Text)
 				end
 			end)
 			
+			function textboxObject:Set(value)
+				textBox.Text = value
+			end
+			
 			UpdateCanvasSize()
-			return textboxFrame
+			return textboxObject -- Kembalikan objek, bukan frame
 		end
 
 		function tab:AddDropdown(dropdownConfig)
 			local options = dropdownConfig.Options or {}
 			local callback = dropdownConfig.Callback or function() end
+			local dropdownObject = {}
 			
 			local dropdownFrame = Instance.new("Frame")
 			dropdownFrame.Size = UDim2.new(1, 0, 0, 60)
@@ -714,7 +736,7 @@ function DarkUI:Load()
 			mainCorner.Parent = mainButton
 			
 			local optionsList = Instance.new("ScrollingFrame")
-			optionsList.Size = UDim2.new(1, 0, 0, 120)
+			optionsList.Size = UDim2.new(1, 0, 0, 155) -- [PERBAIKAN] Tambah tinggi untuk search box
 			optionsList.Position = UDim2.new(0, 0, 0, 65)
 			optionsList.BackgroundColor3 = theme.Element
 			optionsList.BorderSizePixel = 0
@@ -722,20 +744,53 @@ function DarkUI:Load()
 			optionsList.ZIndex = 3
 			optionsList.ScrollBarThickness = 4
 			optionsList.ScrollBarImageColor3 = theme.Accent
+			optionsList.AutomaticCanvasSize = Enum.AutomaticSize.Y -- [PERBAIKAN] Buat canvas otomatis
 			optionsList.Parent = dropdownFrame
 			local listCorner = Instance.new("UICorner")
 			listCorner.CornerRadius = UDim.new(0, 6)
 			listCorner.Parent = optionsList
 			local listLayout = Instance.new("UIListLayout")
 			listLayout.Padding = UDim.new(0, 2)
+			listLayout.SortOrder = Enum.SortOrder.LayoutOrder -- [PERBAIKAN] Gunakan LayoutOrder
 			listLayout.Parent = optionsList
+			
+			-- [[ FITUR BARU: SEARCH BOX ]]
+			local searchBox = Instance.new("TextBox")
+			searchBox.Name = "SearchBox"
+			searchBox.Size = UDim2.new(1, -10, 0, 30)
+			searchBox.Position = UDim2.new(0.5, 0, 0, 0)
+			searchBox.AnchorPoint = Vector2.new(0.5, 0)
+			searchBox.BackgroundColor3 = theme.Background -- Lebih gelap
+			searchBox.TextColor3 = theme.Text
+			searchBox.PlaceholderText = "Cari..."
+			searchBox.PlaceholderColor3 = theme.TextSecondary
+			searchBox.Font = Enum.Font.Gotham
+			searchBox.TextSize = 12
+			searchBox.ClearTextOnFocus = false
+			searchBox.ZIndex = 4
+			searchBox.LayoutOrder = 1 -- Muncul pertama
+			searchBox.Parent = optionsList
+			local searchCorner = Instance.new("UICorner")
+			searchCorner.CornerRadius = UDim.new(0, 4)
+			searchCorner.Parent = searchBox
+			
+			-- Padding di bawah search box
+			local searchPadding = Instance.new("Frame")
+			searchPadding.Size = UDim2.new(1, 0, 0, 5)
+			searchPadding.BackgroundTransparency = 1
+			searchPadding.LayoutOrder = 2
+			searchPadding.Parent = optionsList
+			-- [[ AKHIR FITUR BARU ]]
 
+			local allOptionButtons = {} -- Simpan semua tombol untuk filtering
+			
 			mainButton.MouseButton1Click:Connect(function()
 				optionsList.Visible = not optionsList.Visible
 				if optionsList.Visible then
 					dropdownFrame.Size = UDim2.new(1, 0, 0, 60 + optionsList.Size.Y.Offset + 5)
 				else
 					dropdownFrame.Size = UDim2.new(1, 0, 0, 60)
+					searchBox.Text = "" -- Reset search saat ditutup
 				end
 				UpdateCanvasSize()
 			end)
@@ -749,12 +804,16 @@ function DarkUI:Load()
 				optionButton.TextColor3 = theme.TextSecondary
 				optionButton.TextSize = 14
 				optionButton.Font = Enum.Font.Gotham
+				optionButton.LayoutOrder = 3 -- Muncul setelah search & padding
 				optionButton.Parent = optionsList
+				
+				table.insert(allOptionButtons, optionButton) -- Tambahkan ke list
 				
 				optionButton.MouseButton1Click:Connect(function()
 					mainButton.Text = optionName
 					optionsList.Visible = false
 					dropdownFrame.Size = UDim2.new(1, 0, 0, 60)
+					searchBox.Text = "" -- Reset search saat memilih
 					callback(optionName)
 					UpdateCanvasSize()
 				end)
@@ -763,8 +822,68 @@ function DarkUI:Load()
 				optionButton.MouseLeave:Connect(function() optionButton.TextColor3 = theme.TextSecondary end)
 			end
 			
+			-- [[ FITUR BARU: LOGIC SEARCH ]]
+			searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+				local searchText = string.lower(searchBox.Text)
+				
+				if searchText == "" then
+					for _, button in ipairs(allOptionButtons) do
+						button.Visible = true
+					end
+					return
+				end
+				
+				for _, button in ipairs(allOptionButtons) do
+					local buttonText = string.lower(button.Text)
+					if string.find(buttonText, searchText, 1, true) then
+						button.Visible = true
+					else
+						button.Visible = false
+					end
+				end
+			end)
+			
+			-- [PERBAIKAN] Tambahkan fungsi SetOptions
+			function dropdownObject:SetOptions(newOptions)
+				-- Hapus opsi lama
+				for _, button in ipairs(allOptionButtons) do
+					button:Destroy()
+				end
+				allOptionButtons = {}
+				
+				-- Tambah opsi baru
+				for _, optionName in ipairs(newOptions) do
+					local optionButton = Instance.new("TextButton")
+					optionButton.Size = UDim2.new(1, 0, 0, 30)
+					optionButton.BackgroundColor3 = theme.Element
+					optionButton.BackgroundTransparency = 1
+					optionButton.Text = optionName
+					optionButton.TextColor3 = theme.TextSecondary
+					optionButton.TextSize = 14
+					optionButton.Font = Enum.Font.Gotham
+					optionButton.LayoutOrder = 3
+					optionButton.Parent = optionsList
+					
+					table.insert(allOptionButtons, optionButton)
+					
+					optionButton.MouseButton1Click:Connect(function()
+						mainButton.Text = optionName
+						optionsList.Visible = false
+						dropdownFrame.Size = UDim2.new(1, 0, 0, 60)
+						searchBox.Text = ""
+						callback(optionName)
+						UpdateCanvasSize()
+					end)
+					
+					optionButton.MouseEnter:Connect(function() optionButton.TextColor3 = theme.Text end)
+					optionButton.MouseLeave:Connect(function() optionButton.TextColor3 = theme.TextSecondary end)
+				end
+				-- Reset filter
+				searchBox.Text = ""
+			end
+			
 			UpdateCanvasSize()
-			return dropdownFrame
+			return dropdownObject
 		end
 		
 		function tab:AddKeybind(keybindConfig)
@@ -788,7 +907,6 @@ function DarkUI:Load()
 			keybindButton.Position = UDim2.new(0.6, 0, 0, 0)
 			keybindButton.BackgroundColor3 = theme.Element
 			keybindButton.BackgroundTransparency = theme.Transparency.Element
-			keybindButton.Text = keybindConfig.Default.Name
 			keybindButton.TextColor3 = theme.Text
 			keybindButton.TextSize = 14
 			keybindButton.Font = Enum.Font.Gotham
@@ -799,17 +917,34 @@ function DarkUI:Load()
 			keybindCorner.Parent = keybindButton
 			
 			local isBinding = false
+			local currentKey = keybindConfig.Default -- [PERBAIKAN] Simpan key saat ini
+			keybindButton.Text = currentKey.Name
+			
+			local inputConn
+			
+			-- [PERBAIKAN] Batalkan binding jika fokus hilang
+			keybindButton.FocusLost:Connect(function()
+				if isBinding then
+					isBinding = false
+					keybindButton.Text = currentKey.Name
+					if inputConn then
+						inputConn:Disconnect()
+					end
+				end
+			end)
 			
 			keybindButton.MouseButton1Click:Connect(function()
 				if isBinding then return end
 				isBinding = true
 				keybindButton.Text = "..."
 				
-				local inputConn
+				if inputConn then inputConn:Disconnect() end -- Pastikan koneksi lama mati
+				
 				inputConn = UIS.InputBegan:Connect(function(input, gpe)
 					if gpe then return end
 					if input.UserInputType == Enum.UserInputType.Keyboard then
 						local newKey = input.KeyCode
+						currentKey = newKey -- [PERBAIKAN] Update key
 						keybindButton.Text = newKey.Name
 						if keybindConfig.Callback then
 							keybindConfig.Callback(newKey)
