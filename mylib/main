@@ -1,13 +1,14 @@
--- DarkUI Library v3 (Updated by Gemini)
+-- DarkUI Library v4 (Animated by Gemini)
 local DarkUI = {}
 
 -- [[ Layanan dan Variabel Lokal ]]
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService") -- [[ UPDATE: Tambah TweenService ]]
 
 -- [[ Tema & Warna ]]
 local theme = {
-	Accent = Color3.fromRGB(0, 255, 200), -- Hijau Tosca
+	Accent = Color3.fromRGB(0, 255, 200),
 	AccentDark = Color3.fromRGB(0, 180, 140),
 	Background = Color3.fromRGB(20, 25, 30),
 	Sidebar = Color3.fromRGB(25, 30, 35),
@@ -28,13 +29,13 @@ local theme = {
 function DarkUI:Load()
 	local library = {}
 	library.Config = {
-		MainKeybind = Enum.KeyCode.RightControl -- Default key
+		MainKeybind = Enum.KeyCode.RightControl
 	}
 	
 	local tabs = {}
 	local currentTab = nil
 	local elementsYOffset = 0
-	local isVisible = true -- Untuk sistem minimize
+	local isVisible = true
 
 	-- Create main UI
 	local ScreenGui = Instance.new("ScreenGui")
@@ -45,7 +46,7 @@ function DarkUI:Load()
 	-- Tombol Buka/Logo
 	local OpenButton = Instance.new("TextButton")
 	OpenButton.Size = UDim2.new(0, 60, 0, 60)
-	OpenButton.Position = UDim2.new(0, 30, 0.5, -30)
+	OpenButton.Position = UDim2.new(0, 30, 0.5, -30) -- Posisi awal
 	OpenButton.BackgroundColor3 = theme.Accent
 	OpenButton.Text = "MENU"
 	OpenButton.Font = Enum.Font.GothamBold
@@ -62,14 +63,16 @@ function DarkUI:Load()
 	-- Main container
 	local MainFrame = Instance.new("Frame")
 	MainFrame.Size = UDim2.new(0, 600, 0, 400)
-	MainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
+	-- [[ UPDATE: Ganti Posisi & AnchorPoint untuk Animasi Scale ]]
+	MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0) -- Posisi tengah awal
 	MainFrame.BackgroundColor3 = theme.Background
 	MainFrame.BackgroundTransparency = theme.Transparency.Main
 	MainFrame.BorderSizePixel = 0
 	MainFrame.ClipsDescendants = true
 	MainFrame.Parent = ScreenGui
 	
-	-- Tema Gradasi
+	-- Tema Gradasi & Modern Cut
 	local UICorner = Instance.new("UICorner")
 	UICorner.CornerRadius = UDim.new(0, 12)
 	UICorner.Parent = MainFrame
@@ -82,7 +85,6 @@ function DarkUI:Load()
 	UIGradient.Rotation = 90
 	UIGradient.Parent = MainFrame
 
-	-- [[ UPDATE: Modern "Cut" - UIStroke ]]
 	local UIStroke = Instance.new("UIStroke")
 	UIStroke.Color = theme.Accent
 	UIStroke.Transparency = 0.7
@@ -97,7 +99,6 @@ function DarkUI:Load()
 	TopBar.BorderSizePixel = 0
 	TopBar.Parent = MainFrame
 	
-	-- [[ UPDATE: Modern "Cut" - Accent Line ]]
 	local AccentLine = Instance.new("Frame")
 	AccentLine.Size = UDim2.new(1, 0, 0, 1)
 	AccentLine.Position = UDim2.new(0, 0, 1, -1)
@@ -209,10 +210,38 @@ function DarkUI:Load()
 	
 	-- [[ Fungsi Library ]]
 	
+	-- [[ UPDATE: Animasi Minimize/Maximize ]]
+	local animInfo = TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out)
+	local originalSize = UDim2.new(0, 600, 0, 400)
+	local minimizedSize = UDim2.new(0, 0, 0, 0)
+
 	function library:ToggleVisibility()
 		isVisible = not isVisible
-		MainFrame.Visible = isVisible
-		OpenButton.Visible = not isVisible
+		
+		if isVisible then -- Maximizing (Membuka)
+			OpenButton.Visible = false
+			MainFrame.Visible = true
+			MainFrame.Size = minimizedSize -- Mulai dari kecil
+			
+			local tweenMaximize = TweenService:Create(MainFrame, animInfo, {Size = originalSize})
+			tweenMaximize:Play()
+		else -- Minimizing (Menutup)
+			-- Pindahkan OpenButton ke posisi MainFrame saat ini sebelum mengecil
+			-- Ini membuat logo muncul di tempat UI menghilang
+			local currentPos = MainFrame.Position
+			OpenButton.Position = UDim2.new(currentPos.X.Scale, currentPos.X.Offset - (OpenButton.AbsoluteSize.X / 2), currentPos.Y.Scale, currentPos.Y.Offset - (OpenButton.AbsoluteSize.Y / 2))
+			OpenButton.Visible = true
+			
+			local tweenMinimize = TweenService:Create(MainFrame, animInfo, {Size = minimizedSize})
+			tweenMinimize:Play()
+			
+			-- Sembunyikan frame UTAMA setelah animasi selesai
+			tweenMinimize.Completed:Connect(function()
+				if not isVisible then 
+					MainFrame.Visible = false
+				end
+			end)
+		end
 	end
 	
 	function library:Destroy()
@@ -232,7 +261,7 @@ function DarkUI:Load()
 		end
 	end)
 	
-	-- Draggable
+	-- Draggable MainFrame
 	local dragging = false
 	local dragInput
 	local dragStart
@@ -256,7 +285,36 @@ function DarkUI:Load()
 		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
 			if dragging then
 				local delta = input.Position - dragStart
+				-- Karena AnchorPoint 0.5, 0.5, kita tidak perlu mengubah logika drag
 				MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+			end
+		end
+	end)
+
+	-- [[ UPDATE: Draggable Logo ]]
+	local logoDragging = false
+	local logoDragStart
+	local logoStartPos
+
+	OpenButton.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			logoDragging = true
+			logoDragStart = input.Position
+			logoStartPos = OpenButton.Position
+
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					logoDragging = false
+				end
+			end)
+		end
+	end)
+
+	OpenButton.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+			if logoDragging then
+				local delta = input.Position - logoDragStart
+				OpenButton.Position = UDim2.new(logoStartPos.X.Scale, logoStartPos.X.Offset + delta.X, logoStartPos.Y.Scale, logoStartPos.Y.Offset + delta.Y)
 			end
 		end
 	end)
@@ -407,8 +465,7 @@ function DarkUI:Load()
 		
 		function tab:AddLabel(labelConfig)
 			local label = Instance.new("TextLabel")
-			-- [[ UPDATE: Layout Rapi ]]
-			label.Size = UDim2.new(1, 0, 0, 30) -- Diubah dari 25 ke 30 agar lebih rapi
+			label.Size = UDim2.new(1, 0, 0, 30)
 			label.BackgroundTransparency = 1
 			label.Text = labelConfig.Name
 			label.TextColor3 = theme.Text
@@ -436,7 +493,7 @@ function DarkUI:Load()
 			title.TextSize = 16
 			title.Font = Enum.Font.GothamBold
 			title.TextXAlignment = Enum.TextXAlignment.Left
-			title.Parent = paragraphFrame
+			title.Parent = title
 			
 			local content = Instance.new("TextLabel")
 			content.Size = UDim2.new(1, 0, 0, 0)
@@ -531,7 +588,6 @@ function DarkUI:Load()
 				end
 			end
 			
-			-- [[ UPDATE: Slider Super Smooth ]]
 			local dragging = false
 			local dragConn = nil
 			local inputEndedConn = nil
@@ -539,11 +595,10 @@ function DarkUI:Load()
 			handle.InputBegan:Connect(function(input)
 				if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not dragging then
 					dragging = true
-					handle.BackgroundColor3 = theme.Accent -- Feedback
+					handle.BackgroundColor3 = theme.Accent
 					
 					if dragConn then dragConn:Disconnect() end
 					dragConn = RunService.RenderStepped:Connect(function()
-						-- Dapatkan posisi mouse/touch
 						local mouseX = UIS:GetMouseLocation().X
 						if input.UserInputType == Enum.UserInputType.Touch then
 							local touchPos = UIS:GetTouchPositions()
@@ -562,7 +617,7 @@ function DarkUI:Load()
 					inputEndedConn = UIS.InputEnded:Connect(function(endInput)
 						if endInput.UserInputType == Enum.UserInputType.MouseButton1 or endInput.UserInputType == Enum.UserInputType.Touch then
 							dragging = false
-							handle.BackgroundColor3 = theme.AccentDark -- Reset
+							handle.BackgroundColor3 = theme.AccentDark
 							if dragConn then dragConn:Disconnect(); dragConn = nil end
 							if inputEndedConn then inputEndedConn:Disconnect(); inputEndedConn = nil end
 						end
