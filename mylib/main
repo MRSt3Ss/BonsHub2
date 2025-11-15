@@ -1,11 +1,12 @@
--- DarkUI Library v4 (Animated by Gemini)
--- [UPDATE] Ditambahkan fitur Search untuk Dropdown
+-- DarkUI Library v4.1 (Fix Drag Logo by Gemini)
+-- [UPDATE v4.1] Memperbaiki bug "auto-open" saat logo di-drag.
+-- [UPDATE v4.0] Ditambahkan fitur Search untuk Dropdown
 local DarkUI = {}
 
 -- [[ Layanan dan Variabel Lokal ]]
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService") -- [[ UPDATE: Tambah TweenService ]]
+local TweenService = game:GetService("TweenService")
 
 -- [[ Tema & Warna ]]
 local theme = {
@@ -251,7 +252,7 @@ function DarkUI:Load()
 	
 	CloseButton.MouseButton1Click:Connect(library.Destroy)
 	MinimizeButton.MouseButton1Click:Connect(library.ToggleVisibility)
-	OpenButton.MouseButton1Click:Connect(library.ToggleVisibility)
+	-- [PERBAIKAN] OpenButton.MouseButton1Click dihapus dari sini, dipindah ke InputEnded
 
 	-- Sistem Key (Keybind)
 	UIS.InputBegan:Connect(function(input, gameProcessed)
@@ -292,22 +293,18 @@ function DarkUI:Load()
 		end
 	end)
 
-	-- [[ UPDATE: Draggable Logo ]]
+	-- [[ UPDATE v4.1: PERBAIKAN LOGIKA DRAG LOGO ]]
 	local logoDragging = false
 	local logoDragStart
 	local logoStartPos
+	local dragThreshold = 5 -- Jarak minimum (pixel) untuk dianggap "drag"
 
 	OpenButton.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			logoDragging = true
 			logoDragStart = input.Position
 			logoStartPos = OpenButton.Position
-
-			input.Changed:Connect(function()
-				if input.UserInputState == Enum.UserInputState.End then
-					logoDragging = false
-				end
-			end)
+			-- Tidak perlu koneksi .Changed di sini
 		end
 	end)
 
@@ -319,6 +316,25 @@ function DarkUI:Load()
 			end
 		end
 	end)
+
+	OpenButton.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			if logoDragging then
+				-- Hitung total jarak geser
+				local distance = (input.Position - logoDragStart).Magnitude
+				
+				if distance < dragThreshold then
+					-- Jika jarak < threshold, ini adalah "KLIK"
+					library:ToggleVisibility()
+				end
+				-- Jika jarak >= threshold, ini adalah "DRAG"
+				-- Kita tidak melakukan apa-apa, biarkan logo di posisi barunya.
+				
+				logoDragging = false -- Reset state
+			end
+		end
+	end)
+	-- [SELESAI PERBAIKAN]
 
 	
 	function library:MakeWindow(config)
